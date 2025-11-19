@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   CreditCard,
   Image as ImageIcon,
   LayoutDashboard,
   ListChecks,
+  LogOut,
   Search,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -27,6 +30,11 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/login" });
+  };
 
   return (
     <aside className="sticky top-10 h-fit w-full flex-shrink-0 md:w-64">
@@ -39,6 +47,14 @@ export default function Sidebar() {
         </span>
       </div>
       <Card className="border-0 bg-white p-3 shadow-xl shadow-orange-100/50">
+        {session?.user && (
+          <div className="mb-4 rounded-xl bg-slate-50 p-3">
+            <p className="text-xs font-medium text-slate-500">Signed in as</p>
+            <p className="text-sm font-semibold text-slate-900 truncate">
+              {session.user.name || session.user.email}
+            </p>
+          </div>
+        )}
         <nav className="space-y-1">
           {navItems.map((item) => {
             const active = pathname === item.href;
@@ -67,6 +83,16 @@ export default function Sidebar() {
             );
           })}
         </nav>
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="w-full justify-start gap-3 text-slate-600 hover:text-slate-900"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+        </div>
       </Card>
     </aside>
   );

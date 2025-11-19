@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in.' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
-    const { userId, plan, cadence } = body
+    const { plan, cadence } = body
+    const userId = session.user.id
 
     // Validate required fields
-    if (!userId || !plan || !cadence) {
+    if (!plan || !cadence) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, plan, and cadence are required' },
+        { error: 'Missing required fields: plan and cadence are required' },
         { status: 400 }
       )
     }

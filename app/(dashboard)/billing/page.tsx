@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 
 import { UsageProgress } from "@/components/UsageProgress";
@@ -12,29 +14,39 @@ import { billingHistory, pricingPlans, usageMetrics } from "@/lib/mock-data";
 type BillingCadence = "Monthly" | "Yearly";
 
 export default function BillingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [cadence, setCadence] = useState<BillingCadence>("Monthly");
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Redirect if not authenticated
+  if (status === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
 
   const handleUpgrade = async (planName: string) => {
     if (planName === "Free") {
       return; // Don't do anything for Free plan
     }
 
+    if (!session?.user?.id) {
+      setMessage({ type: "error", text: "You must be logged in to upgrade." });
+      return;
+    }
+
     setLoading(planName);
     setMessage(null);
 
     try {
-      // For now, using a temporary userId. In production, this would come from authentication
-      const userId = "user-123"; // Replace with actual user ID from auth
-
       const response = await fetch("/api/upgrade", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId,
+          userId: session.user.id,
           plan: planName,
           cadence,
         }),
